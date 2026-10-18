@@ -1,0 +1,631 @@
+﻿
+import React, { useMemo, useState } from "react";
+import { createRoot } from "react-dom/client";
+import {
+  Droplets,
+  Search,
+  ShoppingCart,
+  Plus,
+  Minus,
+  X,
+  SlidersHorizontal,
+  ArrowUpRight,
+  ShieldCheck,
+  Menu,
+} from "lucide-react";
+import "./style.css";
+
+const products = [
+  {
+    id: 1,
+    name: "Allura RO + UV + UF + Copper",
+    brand: "Livpure",
+    category: "Home Purifiers",
+    price: 17490,
+    technology: "RO + UV + UF + Copper",
+    capacity: "7 L storage",
+    image:
+      "https://livpure.com/cdn/shop/files/Allura.png",
+    source: "https://livpure.com/collections/ro-water-purifier",
+  },
+  {
+    id: 2,
+    name: "Allura Premia",
+    brand: "Livpure",
+    category: "Home Purifiers",
+    price: 17990,
+    technology: "RO + UV + UF + Mineralizer",
+    capacity: "7 L storage",
+    image: "",
+    source: "https://livpure.com/collections/ro-water-purifier",
+  },
+  {
+    id: 3,
+    name: "Sereno SS",
+    brand: "Livpure",
+    category: "Home Purifiers",
+    price: 21990,
+    technology: "RO + UV + UF",
+    capacity: "5.5 L storage",
+    image: "",
+    source: "https://livpure.com/collections/ro-water-purifier",
+  },
+  {
+    id: 4,
+    name: "KENT Supreme Plus Neo",
+    brand: "KENT",
+    category: "Home Purifiers",
+    price: 21499,
+    technology: "RO + UF + UV",
+    capacity: "See manufacturer specifications",
+    image: "",
+    source: "https://www.kent.co.in/collections/water-purifiers",
+  },
+  {
+    id: 5,
+    name: "KENT Ace Plus Neo",
+    brand: "KENT",
+    category: "Home Purifiers",
+    price: 21499,
+    technology: "RO + UF + UV",
+    capacity: "See manufacturer specifications",
+    image: "",
+    source: "https://www.kent.co.in/collections/water-purifiers",
+  },
+  {
+    id: 6,
+    name: "Commercial RO Plant",
+    brand: "AQUORA",
+    category: "Commercial RO",
+    price: null,
+    technology: "Commercial reverse osmosis",
+    capacity: "Configuration dependent",
+    image: "",
+    source: "",
+  },
+  {
+    id: 7,
+    name: "Industrial RO Treatment Plant",
+    brand: "AQUORA",
+    category: "Industrial RO",
+    price: null,
+    technology: "Industrial reverse osmosis",
+    capacity: "Custom capacity",
+    image: "",
+    source: "",
+  },
+];
+
+function App() {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [sort, setSort] = useState("featured");
+  const [cart, setCart] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [showCart, setShowCart] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const filteredProducts = useMemo(() => {
+    let result = products.filter((product) => {
+      const matchesSearch = [
+        product.name,
+        product.brand,
+        product.category,
+        product.technology,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(search.toLowerCase());
+
+      const matchesCategory =
+        category === "All" || product.category === category;
+
+      const matchesMin =
+        minPrice === "" ||
+        (product.price !== null &&
+          product.price >= Number(minPrice));
+
+      const matchesMax =
+        maxPrice === "" ||
+        (product.price !== null &&
+          product.price <= Number(maxPrice));
+
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesMin &&
+        matchesMax
+      );
+    });
+
+    if (sort === "low") {
+      result.sort(
+        (a, b) => (a.price ?? Infinity) - (b.price ?? Infinity)
+      );
+    }
+
+    if (sort === "high") {
+      result.sort(
+        (a, b) => (b.price ?? -1) - (a.price ?? -1)
+      );
+    }
+
+    if (sort === "name") {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return result;
+  }, [search, category, minPrice, maxPrice, sort]);
+
+  const addToCart = (product) => {
+    setCart((current) => {
+      const existing = current.find((item) => item.id === product.id);
+
+      if (existing) {
+        return current.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+
+      return [...current, { ...product, quantity: 1 }];
+    });
+  };
+
+  const updateQuantity = (id, amount) => {
+    setCart((current) =>
+      current
+        .map((item) =>
+          item.id === id
+            ? { ...item, quantity: item.quantity + amount }
+            : item
+        )
+        .filter((item) => item.quantity > 0)
+    );
+  };
+
+  const resetFilters = () => {
+    setSearch("");
+    setCategory("All");
+    setMinPrice("");
+    setMaxPrice("");
+    setSort("featured");
+  };
+
+  const totalItems = cart.reduce(
+    (sum, item) => sum + item.quantity,
+    0
+  );
+
+  const totalPrice = cart.reduce(
+    (sum, item) =>
+      sum + (item.price || 0) * item.quantity,
+    0
+  );
+
+  const formatPrice = (price) =>
+    price === null
+      ? "Price on Request"
+      : `₹${price.toLocaleString("en-IN")}`;
+
+  return (
+    <div className="app">
+      <div className="announcement">
+        <ShieldCheck size={15} />
+        AQUORA — Water solutions made clear
+      </div>
+
+      <header className="header">
+        <a className="logo" href="#home">
+          <span className="logo-icon">
+            <Droplets size={27} />
+          </span>
+          <span>
+            <strong>AQUORA</strong>
+            <small>WATER TECHNOLOGY</small>
+          </span>
+        </a>
+
+        <nav className={menuOpen ? "nav nav-open" : "nav"}>
+          <a href="#home" onClick={() => setMenuOpen(false)}>
+            Home
+          </a>
+          <a href="#catalogue" onClick={() => setMenuOpen(false)}>
+            Products
+          </a>
+          <a href="#about" onClick={() => setMenuOpen(false)}>
+            About
+          </a>
+        </nav>
+
+        <div className="header-actions">
+          <button
+            className="cart-button"
+            onClick={() => setShowCart(true)}
+          >
+            <ShoppingCart size={19} />
+            Cart <span>{totalItems}</span>
+          </button>
+
+          <button
+            className="menu-button"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle navigation"
+          >
+            {menuOpen ? <X /> : <Menu />}
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <section className="hero" id="home">
+          <div className="hero-content">
+            <span className="eyebrow">
+              WATER SOLUTIONS · MADE CLEAR
+            </span>
+
+            <h1>
+              Pure water.
+              <br />
+              <em>Smarter choices.</em>
+            </h1>
+
+            <p>
+              Explore water purification systems for homes,
+              businesses and industries. Compare specifications
+              and find the right solution for your needs.
+            </p>
+
+            <div className="hero-actions">
+              <a href="#catalogue" className="primary-button">
+                Explore products <ArrowUpRight size={18} />
+              </a>
+              <a href="#about" className="secondary-link">
+                Discover AQUORA
+              </a>
+            </div>
+
+            <div className="hero-trust">
+              <span><ShieldCheck size={17} /> Supplier links</span>
+              <span><Droplets size={17} /> Multiple solutions</span>
+            </div>
+          </div>
+
+          <div className="hero-visual">
+            <div className="water-orbit orbit-one" />
+            <div className="water-orbit orbit-two" />
+            <div className="hero-drop">
+              <Droplets size={100} strokeWidth={1.2} />
+            </div>
+            <div className="floating-card">
+              <span className="live-dot" />
+              WATER TECHNOLOGY
+              <strong>Designed around your needs.</strong>
+            </div>
+          </div>
+        </section>
+
+        <section className="benefits">
+          <div>
+            <ShieldCheck size={25} />
+            <span><strong>Clear information</strong><small>Supplier source links</small></span>
+          </div>
+          <div>
+            <Droplets size={25} />
+            <span><strong>Multiple categories</strong><small>Home to industrial</small></span>
+          </div>
+          <div>
+            <ShoppingCart size={25} />
+            <span><strong>Easy comparison</strong><small>Search and filter products</small></span>
+          </div>
+        </section>
+
+        <section className="catalogue" id="catalogue">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">THE AQUORA CATALOGUE</span>
+              <h2>Find your <em>water solution.</em></h2>
+              <p>Search products, compare technologies and filter by budget.</p>
+            </div>
+            <strong className="result-count">
+              {filteredProducts.length} PRODUCTS
+            </strong>
+          </div>
+
+          <div className="filter-panel">
+            <label className="search-field">
+              <Search size={19} />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search product, brand or technology..."
+              />
+            </label>
+
+            <label className="select-field">
+              <SlidersHorizontal size={17} />
+              <select
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+              >
+                <option value="All">All categories</option>
+                <option value="Home Purifiers">Home purifiers</option>
+                <option value="Commercial RO">Commercial RO</option>
+                <option value="Industrial RO">Industrial RO</option>
+              </select>
+            </label>
+
+            <input
+              className="price-input"
+              type="number"
+              min="0"
+              value={minPrice}
+              onChange={(event) => setMinPrice(event.target.value)}
+              placeholder="Min ₹"
+              aria-label="Minimum price"
+            />
+
+            <input
+              className="price-input"
+              type="number"
+              min="0"
+              value={maxPrice}
+              onChange={(event) => setMaxPrice(event.target.value)}
+              placeholder="Max ₹"
+              aria-label="Maximum price"
+            />
+
+            <select
+              className="sort-select"
+              value={sort}
+              onChange={(event) => setSort(event.target.value)}
+              aria-label="Sort products"
+            >
+              <option value="featured">Featured order</option>
+              <option value="low">Price: low to high</option>
+              <option value="high">Price: high to low</option>
+              <option value="name">Name: A to Z</option>
+            </select>
+
+            <button className="clear-button" onClick={resetFilters}>
+              Clear filters
+            </button>
+          </div>
+
+          <div className="product-grid">
+            {filteredProducts.map((product) => (
+              <article className="product-card" key={product.id}>
+                <button
+                  className="product-image"
+                  onClick={() => setSelected(product)}
+                  aria-label={`View ${product.name}`}
+                >
+                  {product.image ? (
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : null}
+
+                  <div className="image-placeholder">
+                    <Droplets size={43} />
+                    <span>{product.brand}</span>
+                    <small>WATER TECHNOLOGY</small>
+                  </div>
+                </button>
+
+                <div className="product-body">
+                  <div className="product-meta">
+                    <span>{product.brand}</span>
+                    <span className="category-tag">{product.category}</span>
+                  </div>
+
+                  <button
+                    className="product-title"
+                    onClick={() => setSelected(product)}
+                  >
+                    {product.name}
+                  </button>
+
+                  <p className="technology">{product.technology}</p>
+                  <p className="capacity">{product.capacity}</p>
+
+                  <div className="product-bottom">
+                    <div>
+                      <strong>{formatPrice(product.price)}</strong>
+                      <small>
+                        {product.price === null
+                          ? "Contact for a quotation"
+                          : "Listed price · confirm with supplier"}
+                      </small>
+                    </div>
+
+                    {product.price === null ? (
+                      <button
+                        className="add-button quote-button"
+                        onClick={() => setSelected(product)}
+                      >
+                        Quote
+                      </button>
+                    ) : (
+                      <button
+                        className="add-button"
+                        onClick={() => addToCart(product)}
+                        aria-label={`Add ${product.name} to cart`}
+                      >
+                        <Plus size={20} />
+                      </button>
+                    )}
+                  </div>
+
+                  {product.source && (
+                    <a
+                      className="source-link"
+                      href={product.source}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Manufacturer source <ArrowUpRight size={14} />
+                    </a>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {filteredProducts.length === 0 && (
+            <div className="empty-state">
+              <Droplets size={36} />
+              <h3>No products found</h3>
+              <p>Try changing your search or price range.</p>
+              <button className="primary-button" onClick={resetFilters}>
+                Clear all filters
+              </button>
+            </div>
+          )}
+        </section>
+
+        <section className="about-section" id="about">
+          <span className="eyebrow">WHY AQUORA</span>
+          <h2>Better choices start with <em>clear information.</em></h2>
+          <p>
+            Compare water-treatment solutions using available product
+            details and manufacturer sources. Specifications, prices
+            and availability should be confirmed before purchase.
+          </p>
+        </section>
+      </main>
+
+      {selected && (
+        <div className="modal-backdrop" onClick={() => setSelected(null)}>
+          <section
+            className="detail-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              className="close-button"
+              onClick={() => setSelected(null)}
+              aria-label="Close product details"
+            >
+              <X />
+            </button>
+
+            <span className="eyebrow">PRODUCT DETAILS</span>
+            <h2>{selected.name}</h2>
+            <p><strong>Brand:</strong> {selected.brand}</p>
+            <p><strong>Category:</strong> {selected.category}</p>
+            <p><strong>Technology:</strong> {selected.technology}</p>
+            <p><strong>Capacity:</strong> {selected.capacity}</p>
+            <h3>{formatPrice(selected.price)}</h3>
+
+            {selected.price !== null && (
+              <button
+                className="primary-button full-button"
+                onClick={() => {
+                  addToCart(selected);
+                  setSelected(null);
+                }}
+              >
+                Add to cart <ShoppingCart size={18} />
+              </button>
+            )}
+
+            {selected.source && (
+              <a
+                className="source-link"
+                href={selected.source}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open manufacturer source <ArrowUpRight size={15} />
+              </a>
+            )}
+
+            {selected.price === null && (
+              <p className="notice">
+                Request a supplier quotation to confirm configuration and pricing.
+              </p>
+            )}
+          </section>
+        </div>
+      )}
+
+      {showCart && (
+        <div className="modal-backdrop" onClick={() => setShowCart(false)}>
+          <aside className="cart-drawer" onClick={(event) => event.stopPropagation()}>
+            <div className="cart-heading">
+              <h2>Your cart ({totalItems})</h2>
+              <button
+                className="close-button"
+                onClick={() => setShowCart(false)}
+                aria-label="Close cart"
+              >
+                <X />
+              </button>
+            </div>
+
+            {cart.length === 0 ? (
+              <div className="empty-cart">
+                <ShoppingCart size={42} />
+                <h3>Your cart is empty</h3>
+                <p>Add products to see them here.</p>
+              </div>
+            ) : (
+              <>
+                {cart.map((item) => (
+                  <div className="cart-item" key={item.id}>
+                    <div className="cart-item-info">
+                      <strong>{item.name}</strong>
+                      <span>{formatPrice(item.price)}</span>
+                    </div>
+
+                    <div className="quantity-controls">
+                      <button onClick={() => updateQuantity(item.id, -1)}>
+                        <Minus size={15} />
+                      </button>
+                      <span>{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.id, 1)}>
+                        <Plus size={15} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="cart-total">
+                  <span>Estimated total</span>
+                  <strong>{formatPrice(totalPrice)}</strong>
+                </div>
+
+                <p className="notice">
+                  Demo cart only. Connect checkout and payment services
+                  before accepting real orders.
+                </p>
+              </>
+            )}
+          </aside>
+        </div>
+      )}
+
+      <footer className="footer">
+        <a className="logo footer-logo" href="#home">
+          <Droplets size={23} />
+          <strong>AQUORA</strong>
+        </a>
+        <p>Water technology, made clearer.</p>
+        <small>Confirm supplier pricing, specifications and availability before purchase.</small>
+      </footer>
+    </div>
+  );
+}
+
+createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
